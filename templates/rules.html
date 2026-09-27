@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}26 Rules Catalog - PRAP{% endblock %}
+{% block page_title %}Production Readiness Rules Catalog{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">26 Production Readiness Rules</h1>
+        <p class="page-description">Standardized compliance criteria enforcing cloud security, resilience, observability, and operational maturity.</p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <span class="status-chip">
+            <span class="chip-dot"></span>
+            <span>26 Rules Loaded</span>
+        </span>
+    </div>
+</div>
+
+<!-- Rules Search -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-body" style="padding: 16px 24px;">
+        <input type="text" id="rule-search" class="form-input" placeholder="Search rules by ID, keyword, category, or severity..." onkeyup="filterRules()">
+    </div>
+</div>
+
+<div id="rules-container">
+    {% for r in rules %}
+    <div class="rule-card finding-card" data-search="{{ r.id }} {{ r.name }} {{ r.category }} {{ r.severity }} {{ r.description }}">
+        <div class="finding-header" style="background: rgba(255,255,255,0.015);">
+            <div class="finding-title-group">
+                <span class="severity-pill severity-{{ r.severity|lower }}">{{ r.severity }}</span>
+                <span class="finding-rule-id">[{{ r.id }}]</span>
+                <span class="finding-name">{{ r.name }}</span>
+                <span class="category-tag">{{ r.category }}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 0.78rem; color: var(--text-muted);">Weight: <strong style="color: var(--text-primary);">{{ r.weight }}x</strong></span>
+                <span style="font-size: 0.78rem; color: var(--text-muted); font-family: var(--font-mono);">{{ r.check_type }}</span>
+            </div>
+        </div>
+        <div class="finding-body" style="border-top: none; padding-top: 10px;">
+            <p class="finding-desc" style="margin: 6px 0 12px 0;">{{ r.description }}</p>
+            {% if r.suggestion %}
+            <div class="remediation-box" style="margin-bottom: 0;">
+                <strong>Remediation Guidance:</strong> {{ r.suggestion }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+function filterRules() {
+    const input = document.getElementById('rule-search');
+    const filter = input.value.toLowerCase();
+    const cards = document.getElementsByClassName('rule-card');
+
+    for (let i = 0; i < cards.length; i++) {
+        const text = cards[i].getAttribute('data-search').toLowerCase();
+        cards[i].style.display = text.indexOf(filter) > -1 ? '' : 'none';
+    }
+}
+</script>
+{% endblock %}

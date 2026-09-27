@@ -1,0 +1,337 @@
+# Production Readiness Assessment Platform (PRAP) - Rules Catalog
+# 26 Standard Production Readiness Rules across 6 core pillars
+
+rules:
+  # =========================================================================
+  # 1. SECURITY (SEC)
+  # =========================================================================
+  - id: "SEC-001"
+    name: "No Hardcoded Secrets or Credentials"
+    category: "Security"
+    severity: "Critical"
+    weight: 5
+    description: "Detects hardcoded API keys, JWT secrets, database passwords, and private tokens in source code."
+    suggestion: "Extract sensitive credentials into environment variables or a secure secret manager (e.g., AWS Secrets Manager, Vault)."
+    check_type: "forbidden_regex"
+    patterns:
+      - "(?i)(api[_-]?key|secret[_-]?key|auth[_-]?token|jwt[_-]?secret|password|passwd|db_pass)\\s*[:=]\\s*['\"][A-Za-z0-9_\\-+=]{8,}['\"]"
+      - "(?i)(aws_access_key_id|aws_secret_access_key)\\s*[:=]\\s*['\"][A-Za-z0-9/+=]{16,}['\"]"
+      - "-----BEGIN (RSA|EC|DSA|OPENSSH)? PRIVATE KEY-----"
+    file_extensions: [".py", ".js", ".ts", ".json", ".yaml", ".yml", ".env.example", ".sh", ".ini", ".conf"]
+    exclude_paths: ["tests/", "test/", "node_modules/", "venv/", ".git/"]
+
+  - id: "SEC-002"
+    name: "Gitignore Configured & Secrets Protected"
+    category: "Security"
+    severity: "High"
+    weight: 4
+    description: "Checks that .gitignore exists and explicitly prevents committing .env files, virtualenvs, and keys."
+    suggestion: "Ensure .gitignore exists and includes entries for .env, *.pem, *.key, and venv/."
+    check_type: "file_content_contains"
+    target_file: ".gitignore"
+    required_patterns:
+      - "\\.env"
+      - "venv|virtualenv|\\.venv"
+
+  - id: "SEC-003"
+    name: "HTTPS & Secure Cookie Configuration"
+    category: "Security"
+    severity: "High"
+    weight: 4
+    description: "Verifies secure cookie handling (SESSION_COOKIE_SECURE, Secure flag, or SSL redirect)."
+    suggestion: "Enable secure flags for production session cookies (e.g., SESSION_COOKIE_SECURE=True, SESSION_COOKIE_HTTPONLY=True)."
+    check_type: "pattern_presence"
+    patterns:
+      - "(?i)(SESSION_COOKIE_SECURE|SECURE_SSL_REDIRECT|https_only|strict_transport_security|X-Forwarded-Proto)"
+    file_extensions: [".py", ".conf", ".nginx", ".yaml"]
+
+  - id: "SEC-004"
+    name: "Debug Mode Disabled for Production"
+    category: "Security"
+    severity: "Critical"
+    weight: 5
+    description: "Ensures debug mode (debug=True or DEBUG = True) is not unconditionally enabled in production code."
+    suggestion: "Set debug=False in production or control it via an environment variable (e.g. os.environ.get('FLASK_DEBUG') == '1')."
+    check_type: "forbidden_regex"
+    patterns:
+      - "(?i)app\\.run\\([^)]*debug\\s*=\\s*True"
+      - "(?i)DEBUG\\s*=\\s*True\\b"
+    file_extensions: [".py"]
+    exclude_paths: ["tests/", "test/"]
+
+  - id: "SEC-005"
+    name: "Pinned Dependency Specifications"
+    category: "Security"
+    severity: "Medium"
+    weight: 3
+    description: "Ensures dependencies file (requirements.txt / Pipfile) exists and uses pinned or bounded versioning."
+    suggestion: "Provide requirements.txt or Pipfile and specify explicit version constraints (e.g., package==1.0.0 or package>=1.0.0)."
+    check_type: "file_exists"
+    target_files: ["requirements.txt", "Pipfile", "pyproject.toml", "package.json"]
+
+  # =========================================================================
+  # 2. RELIABILITY & RESILIENCE (REL)
+  # =========================================================================
+  - id: "REL-001"
+    name: "Health Check Endpoint Implemented"
+    category: "Reliability"
+    severity: "Critical"
+    weight: 5
+    description: "Checks that a dedicated /health, /ping, or /status endpoint is implemented for load balancer probes."
+    suggestion: "Implement a lightweight health check endpoint returning HTTP 200 with service and DB status."
+    check_type: "pattern_presence"
+    patterns:
+      - "(?i)@.*route\\(['\"]/(health|ping|status|live|ready)['\"]"
+      - "(?i)path\\(['\"](health|ping|status)['\"]"
+    file_extensions: [".py", ".js", ".ts"]
+
+  - id: "REL-002"
+    name: "Global Error Handling Configured"
+    category: "Reliability"
+    severity: "High"
+    weight: 4
+    description: "Checks that custom error handlers (404, 500, or Exception handler) are registered."
+    suggestion: "Add errorhandler decorators or exception middleware to avoid unhandled stack traces reaching clients."
+    check_type: "pattern_presence"
+    patterns:
+      - "(?i)@.*errorhandler"
+      - "(?i)register_error_handler"
+      - "(?i)app\\.errorhandler\\((404|500|Exception)\\)"
+    file_extensions: [".py"]
+
+  - id: "REL-003"
+    name: "Database Connection Resilience & Pooling"
+    category: "Reliability"
+    severity: "High"
+    weight: 4
+    description: "Checks for connection timeout, retry mechanics, or connection pooling for database access."
+    suggestion: "Configure connection timeouts, retry strategies, or connection pooling to prevent hanging database threads."
+    check_type: "pattern_presence"
+    patterns:
+      - "(?i)(pool_size|max_overflow|timeout|connect_timeout|retry|with\\s+sqlite3|with\\s+get_db)"
+    file_extensions: [".py"]
+
+  - id: "REL-004"
+    name: "Graceful Shutdown & Signal Handling"
+    category: "Reliability"
+    severity: "Medium"
+    weight: 3
+    description: "Verifies teardown / context management or signal handling (SIGTERM/SIGINT) for clean shutdown."
+    suggestion: "Implement teardown_appcontext or signal handlers to cleanly release database and network connections."
+    check_type: "pattern_presence"
+    patterns:
+      - "(?i)(teardown_appcontext|teardown_request|signal\\.signal|atexit|close\\(\\)|dispose\\(\\))"
+    file_extensions: [".py"]
+
+  - id: "REL-005"
+    name: "Network & HTTP Request Timeouts"
+    category: "Reliability"
+    severity: "Medium"
+    weight: 3
+    description: "Ensures outbound HTTP/API calls define explicit timeout parameters to prevent infinite thread blocks."
+    suggestion: "Always pass timeout parameter to requests.get/post/put (e.g., requests.get(url, timeout=5))."
+    check_type: "negative_pattern"
+    patterns:
+      - "(?i)requests\\.(get|post|put|delete|patch)\\([^)]*\\)"
+    forbidden_unless: "timeout\\s*="
+    file_extensions: [".py"]
+    exclude_paths: ["tests/", "test/"]
+
+  # =========================================================================
+  # 3. OBSERVABILITY & LOGGING (OBS)
+  # =========================================================================
+  - id: "OBS-001"
+    name: "Standard Logging Framework Used"
+    category: "Observability"
+    severity: "High"
+    weight: 4
+    description: "Verifies the application uses standard logging framework instead of raw print statements."
+    suggestion: "Import and configure Python's logging module (logging.getLogger) for auditability and level filtering."
+    check_type: "pattern_presence"
+    patterns:
+      - "(?i)(import\\s+logging|logger\\s*=\\s*logging\\.getLogger|app\\.logger)"
+    file_extensions: [".py"]
+
+  - id: "OBS-002"
+    name: "No Naked Print Statements in Production Code"
+    category: "Observability"
+    severity: "Medium"
+    weight: 2
+    description: "Detects leftover debug print() statements in core application code."
+    suggestion: "Replace print() calls with app.logger.info() or logger.debug() to maintain proper log severity."
+    check_type: "forbidden_regex"
+    patterns:
+      - "^\\s*print\\s*\\("
+    file_extensions: [".py"]
+    exclude_paths: ["tests/", "test/", "scripts/"]
+
+  - id: "OBS-003"
+    name: "Request Telemetry or Correlation Tracing"
+    category: "Observability"
+    severity: "Medium"
+    weight: 3
+    description: "Checks for request ID logging, response timing headers, or telemetry hooks."
+    suggestion: "Log request paths, response status codes, and duration_ms using before_request/after_request hooks."
+    check_type: "pattern_presence"
+    patterns:
+      - "(?i)(before_request|after_request|request_id|X-Request-ID|duration_ms|start_time)"
+    file_extensions: [".py"]
+
+  - id: "OBS-004"
+    name: "Standardized Log Format & Handler"
+    category: "Observability"
+    severity: "Medium"
+    weight: 2
+    description: "Checks for structured log formatting (timestamp, log level, message) or StreamHandler configuration."
+    suggestion: "Configure logging.basicConfig or Formatter with '%(asctime)s [%(levelname)s] %(message)s'."
+    check_type: "pattern_presence"
+    patterns:
+      - "(?i)(basicConfig|Formatter|StreamHandler|RotatingFileHandler|json_formatter)"
+    file_extensions: [".py", ".conf", ".yaml"]
+
+  # =========================================================================
+  # 4. PERFORMANCE & SCALABILITY (PERF)
+  # =========================================================================
+  - id: "PERF-001"
+    name: "Production WSGI Server Configured"
+    category: "Performance"
+    severity: "Critical"
+    weight: 5
+    description: "Verifies deployment references a production WSGI server (Gunicorn, uWSGI) rather than werkzeug dev server."
+    suggestion: "Include Gunicorn in requirements.txt and create a systemd service or Docker entrypoint using gunicorn."
+    check_type: "pattern_presence"
+    patterns:
+      - "(?i)(gunicorn|uwsgi|waitress|hypercorn)"
+    file_extensions: [".txt", ".service", ".sh", ".Dockerfile", "Dockerfile", ".yml", ".yaml"]
+
+  - id: "PERF-002"
+    name: "Static Asset & File Upload Buffer Limits"
+    category: "Performance"
+    severity: "Medium"
+    weight: 3
+    description: "Checks that file upload size limit (MAX_CONTENT_LENGTH or client_max_body_size) is explicitly bounded."
+    suggestion: "Set MAX_CONTENT_LENGTH in Flask config or client_max_body_size in Nginx to prevent memory exhaustion."
+    check_type: "pattern_presence"
+    patterns:
+      - "(?i)(MAX_CONTENT_LENGTH|client_max_body_size|max_content_length)"
+    file_extensions: [".py", ".conf", ".nginx", ".yaml"]
+
+  - id: "PERF-003"
+    name: "Database Indexes on Query Keys"
+    category: "Performance"
+    severity: "High"
+    weight: 4
+    description: "Verifies database schema defines primary keys, unique constraints, or indexes on foreign keys."
+    suggestion: "Ensure tables have PRIMARY KEY definitions and create INDEX on frequently filtered columns."
+    check_type: "pattern_presence"
+    patterns:
+      - "(?i)(PRIMARY\\s+KEY|CREATE\\s+INDEX|db\\.Index|unique=True)"
+    file_extensions: [".py", ".sql"]
+
+  - id: "PERF-004"
+    name: "Payload Caching or Compression Prepared"
+    category: "Performance"
+    severity: "Low"
+    weight: 2
+    description: "Checks for response caching, gzip compression, or Cache-Control headers."
+    suggestion: "Add gzip compression (Flask-Compress or Nginx gzip on) and Cache-Control headers for static files."
+    check_type: "pattern_presence"
+    patterns:
+      - "(?i)(gzip|cache-control|max-age|flask_caching|lru_cache)"
+    file_extensions: [".py", ".conf", ".nginx"]
+
+  # =========================================================================
+  # 5. OPERATIONS & INFRASTRUCTURE (OPS)
+  # =========================================================================
+  - id: "OPS-001"
+    name: "Environment Variable Configuration"
+    category: "Operations"
+    severity: "High"
+    weight: 4
+    description: "Checks that runtime configurations are loaded via environment variables rather than hardcoded constants."
+    suggestion: "Use os.environ.get('KEY', default) or python-dotenv to decouple application configuration from code."
+    check_type: "pattern_presence"
+    patterns:
+      - "(?i)os\\.environ(\\.get|\\[)"
+      - "(?i)getenv\\("
+    file_extensions: [".py"]
+
+  - id: "OPS-002"
+    name: "Systemd Service or Container Spec Provided"
+    category: "Operations"
+    severity: "High"
+    weight: 4
+    description: "Checks for a systemd service file (.service) or Dockerfile for automated process management."
+    suggestion: "Provide a prap.service systemd unit file or Dockerfile for managed supervisor execution."
+    check_type: "file_exists"
+    target_files: ["prap.service", "service", "Dockerfile", "docker-compose.yml", "Procfile"]
+
+  - id: "OPS-003"
+    name: "Reverse Proxy Configuration Present"
+    category: "Operations"
+    severity: "High"
+    weight: 4
+    description: "Verifies presence of Nginx or Apache reverse proxy configuration file with proxy_pass."
+    suggestion: "Include Nginx configuration file routing traffic from port 80/443 to the local Unix socket / port."
+    check_type: "file_exists"
+    target_files: ["nginx.conf", "prap.conf", "prap_nginx.conf", "nginx/prap.conf", "Caddyfile"]
+
+  - id: "OPS-004"
+    name: "Database Initialization / Migration Scripts"
+    category: "Operations"
+    severity: "High"
+    weight: 4
+    description: "Checks presence of database creation or schema migration scripts (init_db, schema.sql, or migrations)."
+    suggestion: "Include automated database initialization routine (init_db()) or SQL migration files."
+    check_type: "pattern_presence"
+    patterns:
+      - "(?i)(CREATE\\s+TABLE|init_db|flask\\s+db|alembic)"
+    file_extensions: [".py", ".sql", ".sh"]
+
+  - id: "OPS-005"
+    name: "Automated Deployment / CI Workflow"
+    category: "Operations"
+    severity: "Medium"
+    weight: 3
+    description: "Checks for automated deployment pipeline or GitHub Actions workflow file."
+    suggestion: "Add a .github/workflows/deploy.yml pipeline for continuous integration and automated deployment."
+    check_type: "file_exists"
+    target_files: [".github/workflows/deploy.yml", ".github/workflows/ci.yml", "deploy.sh", "Jenkinsfile"]
+
+  # =========================================================================
+  # 6. TESTING & DOCUMENTATION (DOC)
+  # =========================================================================
+  - id: "DOC-001"
+    name: "Comprehensive README Documentation"
+    category: "Documentation"
+    severity: "Medium"
+    weight: 3
+    description: "Verifies README.md exists and contains installation, local run, and deployment instructions."
+    suggestion: "Provide a complete README.md with system prerequisites, installation steps, and architecture overview."
+    check_type: "file_content_contains"
+    target_file: "README.md"
+    required_patterns:
+      - "(?i)install|setup"
+      - "(?i)run|start|deploy"
+
+  - id: "DOC-002"
+    name: "Automated Test Suite Present"
+    category: "Documentation"
+    severity: "High"
+    weight: 4
+    description: "Checks for test files (test_*.py or tests/ directory) and test runner configuration."
+    suggestion: "Create automated tests in tests/ using pytest or unittest covering core endpoints and scanner logic."
+    check_type: "file_exists"
+    target_files: ["tests/test_prap.py", "tests/test_app.py", "test_app.py", "tests/"]
+
+  - id: "DOC-003"
+    name: "API Specification & Route Documentation"
+    category: "Documentation"
+    severity: "Low"
+    weight: 2
+    description: "Checks for API docstrings, OpenAPI/Swagger spec, or API route documentation."
+    suggestion: "Document API endpoints, payload formats, and status codes in docstrings or an API specification."
+    check_type: "pattern_presence"
+    patterns:
+      - "(?i)(/api/assessments|openapi|swagger|API Reference|Endpoints)"
+    file_extensions: [".py", ".md", ".json", ".yaml"]

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Risk Exceptions - PRAP{% endblock %}
+{% block page_title %}Risk Exceptions Portal{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Risk Exceptions Management</h1>
+        <p class="page-description">Documented, time-bounded risk acceptances governed by designated owners and expiration dates.</p>
+    </div>
+</div>
+
+<!-- Governance Banner -->
+<div class="card" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.04) 100%); border-color: rgba(168, 85, 247, 0.25);">
+    <div class="card-body" style="display: flex; gap: 20px; align-items: center;">
+        <div style="width: 48px; height: 48px; border-radius: var(--radius-md); background: rgba(168, 85, 247, 0.15); display: flex; align-items: center; justify-content: center; color: #c084fc; flex-shrink: 0;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <path d="M9 12l2 2 4-4"></path>
+            </svg>
+        </div>
+        <div>
+            <h3 style="color: #fff; font-size: 1rem; margin-bottom: 4px;">Risk Exception Governance Workflow</h3>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5;">
+                A risk exception provides a documented way to temporarily accept a finding instead of silently ignoring it. The expiry date allows the exception to be reviewed later during recurring architectural audit cycles.
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h2 class="card-title">Active & Archived Exceptions ({{ exceptions|length }})</h2>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        {% if exceptions %}
+        <table class="prap-table">
+            <thead>
+                <tr>
+                    <th>Exception ID</th>
+                    <th>Project</th>
+                    <th>Rule</th>
+                    <th>Owner</th>
+                    <th>Requested By</th>
+                    <th>Expiry Date</th>
+                    <th>Reason / Justification</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exc in exceptions %}
+                <tr>
+                    <td><code>#EX-{{ exc.id }}</code></td>
+                    <td>
+                        <strong style="color: #fff;">{{ exc.project_name or 'Project' }}</strong>
+                    </td>
+                    <td>
+                        <strong style="color: var(--accent-cyan); font-family: var(--font-mono);">{{ exc.rule_id }}</strong>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ exc.rule_name }}</div>
+                    </td>
+                    <td><strong style="color: var(--text-primary);">{{ exc.owner }}</strong></td>
+                    <td>{{ exc.requested_by }}</td>
+                    <td>
+                        <code>{{ exc.expiry_date }}</code>
+                    </td>
+                    <td style="max-width: 280px; font-size: 0.82rem; color: var(--text-secondary);">
+                        {{ exc.reason }}
+                    </td>
+                    <td>
+                        <span class="status-badge status-warning">{{ exc.status }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="padding: 48px; text-align: center; color: var(--text-muted);">
+            <p>No risk exceptions recorded yet.</p>
+            <p style="font-size: 0.82rem; margin-top: 4px;">Exceptions can be requested directly from any assessment report finding.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

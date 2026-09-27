@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Assessments History - PRAP{% endblock %}
+{% block page_title %}Assessment History{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Assessment History</h1>
+        <p class="page-description">Complete log of all past production readiness runs, scores, and status records.</p>
+    </div>
+    <button class="btn btn-primary" onclick="openScanModal()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>New Assessment</span>
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h2 class="card-title">All Assessment Records</h2>
+            <p class="card-subtitle">Showing {{ assessments|length }} recorded runs</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="history-search" class="form-input" style="width: 240px; padding: 6px 12px; font-size: 0.82rem;" placeholder="Search by project name..." onkeyup="filterAssessmentsTable()">
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        {% if assessments %}
+        <table class="prap-table" id="assessments-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Project Name</th>
+                    <th>Ingestion</th>
+                    <th>Score</th>
+                    <th>Status</th>
+                    <th>Passed / Failed</th>
+                    <th>Duration</th>
+                    <th>Timestamp</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in assessments %}
+                <tr>
+                    <td><code>#{{ a.id }}</code></td>
+                    <td>
+                        <strong style="color: #fff;">{{ a.project_name }}</strong>
+                    </td>
+                    <td><span class="category-tag">{{ a.scan_type }}</span></td>
+                    <td>
+                        <strong style="font-size: 1.05rem; color: {% if a.score >= 85 %}var(--status-ready){% elif a.score >= 60 %}var(--status-warning){% else %}var(--status-danger){% endif %};">
+                            {{ a.score }}/100
+                        </strong>
+                    </td>
+                    <td>
+                        {% if a.status == 'Ready' %}
+                            <span class="status-badge status-ready">Ready</span>
+                        {% elif a.status == 'Needs Attention' %}
+                            <span class="status-badge status-needs-attention">Needs Attention</span>
+                        {% else %}
+                            <span class="status-badge status-high-risk">High Risk</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span style="color: var(--status-ready);">{{ a.passed_rules }}</span> /
+                        <span style="color: var(--status-danger);">{{ a.failed_rules }}</span>
+                    </td>
+                    <td>{{ a.duration_ms }} ms</td>
+                    <td>{{ a.created_at }}</td>
+                    <td>
+                        <div style="display: flex; gap: 8px;">
+                            <a href="{{ url_for('prap.assessment_detail_view', assessment_id=a.id) }}" class="btn btn-secondary btn-sm">
+                                View
+                            </a>
+                            <button class="btn btn-outline-danger btn-sm" onclick="deleteAssessment({{ a.id }})">
+                                Delete
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="padding: 48px; text-align: center; color: var(--text-muted);">
+            <p>No assessment history found.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function filterAssessmentsTable() {
+    const input = document.getElementById('history-search');
+    const filter = input.value.toLowerCase();
+    const table = document.getElementById('assessments-table');
+    const tr = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < tr.length; i++) {
+        const td = tr[i].getElementsByTagName('td')[1];
+        if (td) {
+            const txt = td.textContent || td.innerText;
+            tr[i].style.display = txt.toLowerCase().indexOf(filter) > -1 ? '' : 'none';
+        }
+    }
+}
+</script>
+{% endblock %}

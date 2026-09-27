@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Findings Explorer - PRAP{% endblock %}
+{% block page_title %}Findings Explorer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Findings Explorer</h1>
+        <p class="page-description">Aggregated production readiness discrepancies and remediation tracking across all scanned repositories.</p>
+    </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="card" style="margin-bottom: 20px;">
+    <div class="card-body" style="padding: 16px 24px;">
+        <form method="GET" action="{{ url_for('prap.findings_list_view') }}" style="display: flex; gap: 16px; align-items: flex-end; padding: 0;">
+            <div class="form-group" style="margin: 0; flex: 1;">
+                <label class="form-label">Filter by Status</label>
+                <select name="status" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Statuses</option>
+                    <option value="Open" {% if selected_status == 'Open' %}selected{% endif %}>Open</option>
+                    <option value="In Review" {% if selected_status == 'In Review' %}selected{% endif %}>In Review</option>
+                    <option value="Resolved" {% if selected_status == 'Resolved' %}selected{% endif %}>Resolved</option>
+                    <option value="Exception Granted" {% if selected_status == 'Exception Granted' %}selected{% endif %}>Exception Granted</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin: 0; flex: 1;">
+                <label class="form-label">Filter by Severity</label>
+                <select name="severity" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Severities</option>
+                    <option value="Critical" {% if selected_severity == 'Critical' %}selected{% endif %}>Critical</option>
+                    <option value="High" {% if selected_severity == 'High' %}selected{% endif %}>High</option>
+                    <option value="Medium" {% if selected_severity == 'Medium' %}selected{% endif %}>Medium</option>
+                    <option value="Low" {% if selected_severity == 'Low' %}selected{% endif %}>Low</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin: 0; flex: 1;">
+                <label class="form-label">Filter by Category</label>
+                <select name="category" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Categories</option>
+                    <option value="Security" {% if selected_category == 'Security' %}selected{% endif %}>Security</option>
+                    <option value="Reliability" {% if selected_category == 'Reliability' %}selected{% endif %}>Reliability</option>
+                    <option value="Observability" {% if selected_category == 'Observability' %}selected{% endif %}>Observability</option>
+                    <option value="Performance" {% if selected_category == 'Performance' %}selected{% endif %}>Performance</option>
+                    <option value="Operations" {% if selected_category == 'Operations' %}selected{% endif %}>Operations</option>
+                    <option value="Documentation" {% if selected_category == 'Documentation' %}selected{% endif %}>Documentation</option>
+                </select>
+            </div>
+
+            {% if selected_status or selected_severity or selected_category %}
+            <a href="{{ url_for('prap.findings_list_view') }}" class="btn btn-secondary">Clear Filters</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- Findings List Table -->
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h2 class="card-title">Identified Findings ({{ findings|length }})</h2>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        {% if findings %}
+        <table class="prap-table">
+            <thead>
+                <tr>
+                    <th>Rule</th>
+                    <th>Project</th>
+                    <th>Severity</th>
+                    <th>Category</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in findings %}
+                <tr>
+                    <td>
+                        <strong style="color: var(--accent-cyan); font-family: var(--font-mono);">{{ f.rule_id }}</strong>
+                        <div style="color: var(--text-primary); font-size: 0.82rem; margin-top: 2px;">{{ f.rule_name }}</div>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('prap.assessment_detail_view', assessment_id=f.assessment_id) }}" style="font-weight: 600;">
+                            {{ f.project_name }}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="severity-pill severity-{{ f.severity|lower }}">{{ f.severity }}</span>
+                    </td>
+                    <td><span class="category-tag">{{ f.category }}</span></td>
+                    <td>
+                        {% if f.file_path %}
+                            <code>{{ f.file_path }}{% if f.line_number > 0 %}:{{ f.line_number }}{% endif %}</code>
+                        {% else %}
+                            <span style="color: var(--text-muted);">&mdash;</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="status-badge {% if f.status == 'Open' %}status-high-risk{% elif f.status == 'Exception Granted' %}status-needs-attention{% else %}status-ready{% endif %}" id="finding-status-{{ f.id }}">
+                            {{ f.status }}
+                        </span>
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-secondary btn-sm" onclick="openExceptionModal('{{ f.id }}', '{{ f.rule_id }}', '{{ f.rule_name|escape }}', '{{ f.category }}', '{{ f.severity }}')">
+                                Request Exception
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="padding: 48px; text-align: center; color: var(--text-muted);">
+            No findings matching current filters.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

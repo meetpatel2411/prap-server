@@ -1,0 +1,4 @@
+[Unit]
+Description=Sample Service
+[Service]
+ExecStart=/usr/bin/gunicorn app:app

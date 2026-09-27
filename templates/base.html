@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PRAP - Production Readiness Assessment Platform{% endblock %}</title>
+    <meta name="description" content="Production Readiness Assessment Platform for cloud and microservice applications. Evaluate projects against 26 production rules, compute readiness scores, and manage risk exceptions.">
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body class="prap-app">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                    <polyline points="2 17 12 22 22 17"></polyline>
+                    <polyline points="2 12 12 17 22 12"></polyline>
+                </svg>
+            </div>
+            <div class="brand-text">
+                <span class="brand-title">PRAP</span>
+                <span class="brand-subtitle">Production Readiness</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-menu">
+            <div class="menu-label">CORE PLATFORM</div>
+            <a href="{{ url_for('prap.dashboard') }}" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}" id="nav-dashboard">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="9"></rect>
+                    <rect x="14" y="3" width="7" height="5"></rect>
+                    <rect x="14" y="12" width="7" height="9"></rect>
+                    <rect x="3" y="16" width="7" height="5"></rect>
+                </svg>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('prap.assessments_list_view') }}" class="nav-item {% if active_page == 'assessments' %}active{% endif %}" id="nav-assessments">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <span>Assessments</span>
+            </a>
+            <a href="{{ url_for('prap.findings_list_view') }}" class="nav-item {% if active_page == 'findings' %}active{% endif %}" id="nav-findings">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>Findings</span>
+            </a>
+            <a href="{{ url_for('prap.exceptions_list_view') }}" class="nav-item {% if active_page == 'exceptions' %}active{% endif %}" id="nav-exceptions">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    <path d="M9 12l2 2 4-4"></path>
+                </svg>
+                <span>Risk Exceptions</span>
+            </a>
+
+            <div class="menu-label">STANDARDS & GOVERNANCE</div>
+            <a href="{{ url_for('prap.rules_catalog_view') }}" class="nav-item {% if active_page == 'rules' %}active{% endif %}" id="nav-rules">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+                <span>26 Rules Catalog</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="ec2-badge">
+                <span class="pulse-indicator"></span>
+                <div class="ec2-details">
+                    <span class="ec2-title">AWS EC2 • Ubuntu</span>
+                    <span class="ec2-host" id="ec2-indicator">Nginx + Gunicorn</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+        <!-- Top App Bar -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="mobile-toggle" id="sidebar-toggle" aria-label="Toggle navigation">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <div class="breadcrumb-container">
+                    <span class="crumb-root">PRAP Console</span>
+                    <span class="crumb-separator">/</span>
+                    <span class="crumb-current">{% block page_title %}Dashboard{% endblock %}</span>
+                </div>
+            </div>
+
+            <div class="topbar-right">
+                <div class="status-chip" title="System Status">
+                    <span class="chip-dot"></span>
+                    <span>Ready Engine v1.0</span>
+                </div>
+                <button class="btn btn-primary btn-sm" id="btn-open-scan-modal" onclick="openScanModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>Run Assessment</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Flash messages -->
+        <div class="flash-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-alert flash-{{ category }}">
+                            <span>{{ message }}</span>
+                            <button class="flash-close" onclick="this.parentElement.remove()">&times;</button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <!-- Page Body -->
+        <main class="content-container">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Modal: Run Assessment / Zip Upload -->
+    <div class="modal-backdrop" id="scan-modal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title">Run Production Readiness Assessment</h3>
+                    <p class="modal-subtitle">Upload your project repository as a .zip or specify a server path</p>
+                </div>
+                <button class="btn-close" onclick="closeScanModal()">&times;</button>
+            </div>
+
+            <div class="modal-tabs">
+                <button class="tab-btn active" id="tab-btn-zip" onclick="switchScanTab('zip')">Zip Archive Upload</button>
+                <button class="tab-btn" id="tab-btn-path" onclick="switchScanTab('path')">Server Local Path</button>
+            </div>
+
+            <!-- Tab 1: Zip Upload Form -->
+            <form id="form-scan-zip" onsubmit="handleZipSubmit(event)" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label class="form-label" for="project_name_input">Project Name (Optional)</label>
+                    <input type="text" id="project_name_input" class="form-input" placeholder="e.g. OrderProcessingService or CustomerPortal">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Project Archive (.zip)</label>
+                    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('zip_file_input').click()">
+                        <div class="drop-zone-icon">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                        </div>
+                        <p class="drop-zone-primary">Click to browse or drag & drop project .zip here</p>
+                        <p class="drop-zone-hint">Max file size: 50MB • Automatically extracted & scanned in memory/tmp</p>
+                        <div class="selected-file-badge" id="selected-file-badge" style="display: none;"></div>
+                    </div>
+                    <input type="file" id="zip_file_input" name="file" accept=".zip" style="display: none;" onchange="handleFileSelect(event)">
+                </div>
+
+                <div class="upload-progress-wrapper" id="upload-progress-wrapper" style="display: none;">
+                    <div class="progress-info">
+                        <span id="progress-status-text">Uploading and running 26 rules check...</span>
+                        <span id="progress-percent-text">0%</span>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-bar-fill" id="progress-bar-fill"></div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeScanModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-scan">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        <span>Start Assessment</span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Tab 2: Local Directory Path Form -->
+            <form id="form-scan-path" onsubmit="handlePathSubmit(event)" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label" for="path_project_name">Project Name (Optional)</label>
+                    <input type="text" id="path_project_name" class="form-input" placeholder="e.g. MyLocalService">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="path_input">Local Directory Path on Server</label>
+                    <input type="text" id="path_input" class="form-input" placeholder="/home/ubuntu/projects/myapp or d:/project/app" required>
+                    <p class="form-hint">Path must exist on the server filesystem hosting the PRAP service.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeScanModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-path">
+                        <span>Evaluate Path</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Request Risk Exception -->
+    <div class="modal-backdrop" id="exception-modal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title">Request Risk Exception</h3>
+                    <p class="modal-subtitle">Document a temporary, accepted risk exception with designated owner and expiration</p>
+                </div>
+                <button class="btn-close" onclick="closeExceptionModal()">&times;</button>
+            </div>
+
+            <form id="form-exception" onsubmit="handleExceptionSubmit(event)">
+                <input type="hidden" id="exc_finding_id" name="finding_id">
+                <input type="hidden" id="exc_rule_id" name="rule_id">
+
+                <div class="finding-summary-box" id="exc_finding_summary">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group col-6">
+                        <label class="form-label" for="exc_owner">Responsible Owner *</label>
+                        <input type="text" id="exc_owner" class="form-input" placeholder="e.g. DevSecOps Lead (Jane Doe)" required>
+                    </div>
+                    <div class="form-group col-6">
+                        <label class="form-label" for="exc_requested_by">Requested By *</label>
+                        <input type="text" id="exc_requested_by" class="form-input" placeholder="e.g. Lead Engineer (Alex R)" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="exc_expiry_date">Exception Expiry Date *</label>
+                    <input type="date" id="exc_expiry_date" class="form-input" required>
+                    <p class="form-hint">Exceptions automatically require re-assessment upon expiration.</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="exc_reason">Business / Technical Justification *</label>
+                    <textarea id="exc_reason" class="form-textarea" rows="3" placeholder="Explain why this finding cannot be resolved immediately and what mitigating controls are in place." required></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeExceptionModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-exception">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                        <span>Grant Risk Exception</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

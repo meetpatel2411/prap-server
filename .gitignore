@@ -1,0 +1,31 @@
+# Secrets & Keys
+.env
+.env.*
+*.pem
+*.key
+
+# Python & Virtualenv
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# PRAP Database & Uploads
+database.db
+*.db
+*.sqlite3
+/tmp/
+prap_uploads/
+*.sock
+
+# Sample Project artifacts
+sample_project.zip
+
+# IDE & Operating System
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

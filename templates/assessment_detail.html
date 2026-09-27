@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment #{{ assessment.id }} - {{ assessment.project_name }} - PRAP{% endblock %}
+{% block page_title %}Assessment Report #{{ assessment.id }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px;">
+            <h1 class="page-title">{{ assessment.project_name }}</h1>
+            {% if assessment.status == 'Ready' %}
+                <span class="status-badge status-ready" style="font-size: 0.85rem; padding: 6px 14px;">Ready for Production</span>
+            {% elif assessment.status == 'Needs Attention' %}
+                <span class="status-badge status-needs-attention" style="font-size: 0.85rem; padding: 6px 14px;">Needs Attention</span>
+            {% else %}
+                <span class="status-badge status-high-risk" style="font-size: 0.85rem; padding: 6px 14px;">High Risk Gate</span>
+            {% endif %}
+        </div>
+        <p class="page-description">
+            Assessment ID: <code>#{{ assessment.id }}</code> • Scan UUID: <code>{{ assessment.uuid }}</code> • Ingestion: <code>{{ assessment.scan_type }}</code>
+        </p>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+        <button class="btn btn-secondary" onclick="window.print()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+            </svg>
+            <span>Print Report</span>
+        </button>
+        <a href="/api/assessments/{{ assessment.id }}" target="_blank" class="btn btn-secondary">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>JSON Payload</span>
+        </a>
+        <button class="btn btn-outline-danger" onclick="deleteAssessment({{ assessment.id }})">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            <span>Delete</span>
+        </button>
+    </div>
+</div>
+
+<!-- Assessment Score Hero Card -->
+<div class="assessment-hero">
+    <div class="score-display-box">
+        <!-- SVG Radial Score Dial -->
+        <div class="radial-score-dial">
+            <svg width="140" height="140" viewBox="0 0 140 140">
+                <circle class="dial-bg" cx="70" cy="70" r="56" />
+                <circle class="dial-meter" id="score-dial-circle" cx="70" cy="70" r="56" data-score="{{ assessment.score }}" />
+            </svg>
+            <div class="dial-text">
+                <div class="dial-number">{{ assessment.score }}</div>
+                <div class="dial-max">/ 100</div>
+            </div>
+        </div>
+
+        <div class="score-breakdown-stats">
+            <div style="font-family: var(--font-heading); font-size: 1.35rem; font-weight: 700; color: #fff;">
+                Overall Readiness Score
+            </div>
+            <div class="breakdown-row">
+                <span class="count" style="color: var(--status-ready);">{{ assessment.passed_rules }}</span> Passed Rules
+            </div>
+            <div class="breakdown-row">
+                <span class="count" style="color: var(--status-danger);">{{ assessment.failed_rules }}</span> Failed Rules
+            </div>
+            <div class="breakdown-row">
+                <span class="count" style="color: var(--text-primary);">{{ assessment.total_rules }}</span> Total Evaluated
+            </div>
+        </div>
+    </div>
+
+    <div class="assessment-meta" style="border-left: 1px solid var(--border-subtle); padding-left: 32px;">
+        <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; margin-bottom: 8px;">
+            Execution Details
+        </div>
+        <p style="font-size: 0.92rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+            {{ assessment.summary }}
+        </p>
+        <div style="display: flex; gap: 24px; font-size: 0.8rem; color: var(--text-muted);">
+            <div>Duration: <strong style="color: var(--text-primary);">{{ assessment.duration_ms }} ms</strong></div>
+            <div>Date: <strong style="color: var(--text-primary);">{{ assessment.created_at }}</strong></div>
+            <div>Exceptions: <strong style="color: #c084fc;">{{ assessment.exceptions|length }} Recorded</strong></div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs Navigation -->
+<div style="margin-bottom: 24px; border-bottom: 1px solid var(--border-subtle); display: flex; gap: 8px;">
+    <button class="tab-btn active" id="tab-findings" onclick="switchDetailTab('findings')">
+        Discrepancies & Findings ({{ assessment.findings|length }})
+    </button>
+    <button class="tab-btn" id="tab-exceptions" onclick="switchDetailTab('exceptions')">
+        Risk Exceptions ({{ assessment.exceptions|length }})
+    </button>
+</div>
+
+<!-- Tab Panel 1: Findings List -->
+<div id="panel-findings">
+    {% if assessment.findings %}
+        <div style="margin-bottom: 16px; font-size: 0.88rem; color: var(--text-secondary);">
+            The following {{ assessment.findings|length }} finding(s) require remediation before production approval, or a formal Risk Exception request.
+        </div>
+
+        {% for f in assessment.findings %}
+        <div class="finding-card">
+            <div class="finding-header">
+                <div class="finding-title-group">
+                    <span class="severity-pill severity-{{ f.severity|lower }}">{{ f.severity }}</span>
+                    <span class="finding-rule-id">[{{ f.rule_id }}]</span>
+                    <span class="finding-name">{{ f.rule_name }}</span>
+                    <span class="category-tag">{{ f.category }}</span>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span class="status-badge {% if f.status == 'Open' %}status-high-risk{% elif f.status == 'Exception Granted' %}status-needs-attention{% else %}status-ready{% endif %}" id="finding-status-{{ f.id }}">
+                        {{ f.status }}
+                    </span>
+                    <button class="btn btn-secondary btn-sm" onclick="openExceptionModal('{{ f.id }}', '{{ f.rule_id }}', '{{ f.rule_name|escape }}', '{{ f.category }}', '{{ f.severity }}')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                        <span>Request Exception</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="finding-body">
+                <p class="finding-desc">{{ f.description }}</p>
+
+                {% if f.file_path %}
+                <div class="snippet-file">
+                    <strong>Target File:</strong> <code>{{ f.file_path }}{% if f.line_number > 0 %}:{{ f.line_number }}{% endif %}</code>
+                </div>
+                {% endif %}
+
+                {% if f.snippet %}
+                <div class="code-snippet-box">
+                    <code>{{ f.snippet }}</code>
+                </div>
+                {% endif %}
+
+                {% if f.suggestion %}
+                <div class="remediation-box">
+                    <strong>Remediation Recommendation:</strong>
+                    <div>{{ f.suggestion }}</div>
+                </div>
+                {% endif %}
+
+                <div class="finding-actions">
+                    <span style="font-size: 0.78rem; color: var(--text-muted);">Change Tracking Status:</span>
+                    <select class="form-select" style="width: auto; padding: 4px 8px; font-size: 0.8rem;" onchange="updateFindingStatus({{ f.id }}, this.value)">
+                        <option value="Open" {% if f.status == 'Open' %}selected{% endif %}>Open</option>
+                        <option value="In Review" {% if f.status == 'In Review' %}selected{% endif %}>In Review</option>
+                        <option value="Resolved" {% if f.status == 'Resolved' %}selected{% endif %}>Resolved</option>
+                        <option value="Exception Granted" {% if f.status == 'Exception Granted' %}selected{% endif %}>Exception Granted</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+    {% else %}
+        <div class="card" style="padding: 48px; text-align: center;">
+            <div style="color: var(--status-ready); margin-bottom: 12px;">
+                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+            </div>
+            <h3 style="color: #fff; margin-bottom: 6px;">Zero Open Findings Detected!</h3>
+            <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto;">
+                All evaluated rules passed successfully. The project adheres to security, reliability, observability, and infrastructure standards.
+            </p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Tab Panel 2: Exceptions List -->
+<div id="panel-exceptions" style="display: none;">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Risk Exceptions Granted for this Assessment</h2>
+        </div>
+        <div class="table-responsive">
+            {% if assessment.exceptions %}
+            <table class="prap-table">
+                <thead>
+                    <tr>
+                        <th>Rule ID</th>
+                        <th>Owner</th>
+                        <th>Requested By</th>
+                        <th>Expiry Date</th>
+                        <th>Business Reason</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exc in assessment.exceptions %}
+                    <tr>
+                        <td><strong style="color: var(--accent-cyan); font-family: var(--font-mono);">{{ exc.rule_id }}</strong></td>
+                        <td>{{ exc.owner }}</td>
+                        <td>{{ exc.requested_by }}</td>
+                        <td><code>{{ exc.expiry_date }}</code></td>
+                        <td>{{ exc.reason }}</td>
+                        <td>
+                            <span class="status-badge status-warning">{{ exc.status }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div style="padding: 32px; text-align: center; color: var(--text-muted);">
+                No risk exceptions have been registered for this assessment.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function switchDetailTab(tab) {
+    const tabF = document.getElementById('tab-findings');
+    const tabE = document.getElementById('tab-exceptions');
+    const panelF = document.getElementById('panel-findings');
+    const panelE = document.getElementById('panel-exceptions');
+
+    if (tab === 'findings') {
+        tabF.classList.add('active');
+        tabE.classList.remove('active');
+        panelF.style.display = 'block';
+        panelE.style.display = 'none';
+    } else {
+        tabE.classList.add('active');
+        tabF.classList.remove('active');
+        panelE.style.display = 'block';
+        panelF.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}
