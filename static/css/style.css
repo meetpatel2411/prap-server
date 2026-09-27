@@ -1312,3 +1312,69 @@ form {
         gap: 0;
     }
 }
+
+/* ==========================================================================
+   Global Footer & Author Credits
+   ========================================================================== */
+.app-footer {
+    margin-top: auto;
+    border-top: 1px solid var(--border-subtle);
+    padding: 24px 32px;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(10px);
+}
+
+.footer-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+}
+
+.footer-author-link {
+    color: var(--accent-cyan);
+    font-weight: 600;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.footer-author-link:hover {
+    color: #38bdf8;
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+    text-decoration: underline;
+}
+
+.footer-separator {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.footer-tagline {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.creator-badge {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-subtle);
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.creator-badge a {
+    color: var(--accent-cyan);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.creator-badge a:hover {
+    text-decoration: underline;
+    color: #38bdf8;
+}
+
