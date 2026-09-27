@@ -77,15 +77,24 @@
         </nav>
 
         <div class="sidebar-footer">
+            <a href="https://dobariyameet.com" target="_blank" rel="noopener noreferrer" class="creator-profile-card" title="Visit Dobariya Meet's Portfolio">
+                <div class="creator-avatar-badge">DM</div>
+                <div class="creator-text-group">
+                    <span class="creator-kicker">DEVELOPED & DESIGNED BY</span>
+                    <span class="creator-name-row">
+                        <strong class="creator-name-text">Dobariya Meet</strong>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                    </span>
+                    <span class="creator-domain">dobariyameet.com</span>
+                </div>
+            </a>
+
             <div class="ec2-badge">
                 <span class="pulse-indicator"></span>
                 <div class="ec2-details">
                     <span class="ec2-title">AWS EC2 • Ubuntu</span>
                     <span class="ec2-host" id="ec2-indicator">Nginx + Gunicorn</span>
                 </div>
-            </div>
-            <div class="creator-badge">
-                Developed and Designed by <a href="https://dobariyameet.com" target="_blank" rel="noopener noreferrer">Dobariya Meet</a>
             </div>
         </div>
     </aside>
@@ -110,6 +119,11 @@
             </div>
 
             <div class="topbar-right">
+                <a href="https://dobariyameet.com" target="_blank" rel="noopener noreferrer" class="topbar-author-badge" title="Developed and Designed by Dobariya Meet">
+                    <span class="author-dot"></span>
+                    <span class="author-text">Designed by <strong>Dobariya Meet</strong></span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                </a>
                 <div class="status-chip" title="System Status">
                     <span class="chip-dot"></span>
                     <span>Ready Engine v1.0</span>
@@ -143,12 +157,36 @@
             {% block content %}{% endblock %}
         </main>
 
-        <!-- Global Footer -->
+        <!-- Global App Footer -->
         <footer class="app-footer">
-            <div class="footer-content">
-                <span>Developed and Designed by <a href="https://dobariyameet.com" target="_blank" rel="noopener noreferrer" class="footer-author-link">Dobariya Meet</a></span>
-                <span class="footer-separator">•</span>
-                <span class="footer-tagline">Production Readiness Assessment Platform</span>
+            <div class="footer-container">
+                <div class="footer-left">
+                    <div class="footer-brand-pill">
+                        <span class="pill-dot-live"></span>
+                        <strong>PRAP</strong> • Production Readiness Assessment Platform
+                    </div>
+                    <p class="footer-desc">Automated architectural verification and release gate governance platform for cloud workloads.</p>
+                </div>
+
+                <div class="footer-right">
+                    <div class="creator-showcase-box">
+                        <div class="creator-sparkle-label">
+                            <span class="sparkle-emoji">✨</span>
+                            <span>PLATFORM ARCHITECT & DESIGNER</span>
+                        </div>
+                        <a href="https://dobariyameet.com" target="_blank" rel="noopener noreferrer" class="creator-profile-link" title="Explore Dobariya Meet's Portfolio & Projects">
+                            <div class="creator-avatar">DM</div>
+                            <div class="creator-details">
+                                <span class="creator-role-tag">Developed and Designed by</span>
+                                <span class="creator-name-bold">
+                                    Dobariya Meet
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                                </span>
+                                <span class="creator-url-tag">dobariyameet.com</span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
             </div>
         </footer>
     </div>
