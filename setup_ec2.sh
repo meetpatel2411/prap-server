@@ -10,6 +10,9 @@ echo "=== [1/6] Updating Ubuntu Packages & Installing Prerequisites ==="
 sudo apt update -y
 sudo apt install -y python3-pip python3-venv nginx sqlite3 unzip git curl
 
+# Ensure Nginx (www-data) can read static files in /home/ubuntu
+sudo chmod 755 /home/ubuntu
+
 APP_DIR="/home/ubuntu/prap"
 if [ ! -d "$APP_DIR" ]; then
     echo "Creating application directory: $APP_DIR"

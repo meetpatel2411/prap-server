@@ -131,7 +131,7 @@ Group=www-data
 WorkingDirectory=/home/ubuntu/prap
 Environment="PATH=/home/ubuntu/prap/venv/bin"
 Environment="PRAP_DB_PATH=/home/ubuntu/prap/database.db"
-ExecStart=/home/ubuntu/prap/venv/bin/gunicorn --workers 3 --bind unix:prap.sock -m 007 app:app
+ExecStart=/home/ubuntu/prap/venv/bin/gunicorn --workers 3 --bind 127.0.0.1:5000 app:app
 Restart=always
 
 [Install]
@@ -161,7 +161,7 @@ server {
 
     location / {
         include proxy_params;
-        proxy_pass http://unix:/home/ubuntu/prap/prap.sock;
+        proxy_pass http://127.0.0.1:5000;
     }
 }
 ```
